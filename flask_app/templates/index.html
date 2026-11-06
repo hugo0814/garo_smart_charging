@@ -30,6 +30,8 @@ button, select { font: inherit; padding: 10px 14px; border: 1px solid var(--mute
 .labels { display: flex; gap: 1px; font-size: .75em; color: var(--muted); }
 .labels span { flex: 1; overflow: visible; white-space: nowrap; }
 ul { margin: 0; padding-left: 20px; }
+.settings { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.settings label { display: flex; flex-direction: column; flex: 1; gap: 4px; }
 </style>
 </head>
 <body>
@@ -74,15 +76,22 @@ ul { margin: 0; padding-left: 20px; }
 {% endif %}
 
 <section>
-  <div class="row">
-    <b>Laddtider</b>
-    <form method="post" action="/hours">
+  <form method="post" action="/settings" class="settings">
+    <label>Laddtimmar
       <select name="hours" onchange="this.form.submit()">
         {% for h in range(1, maxHours + 1) %}<option value="{{ h }}" {{ 'selected' if h == numHours }}>{{ h }} h/natt</option>{% endfor %}
       </select>
-      <noscript><button>Spara</button></noscript>
-    </form>
-  </div>
+    </label>
+    <label>Avresetid
+      <select name="departure" onchange="this.form.submit()">
+        {% for h in departureHours %}<option value="{{ h }}" {{ 'selected' if h == departure }}>{{ '%02d' % h }}:00</option>{% endfor %}
+      </select>
+    </label>
+    <noscript><button>Spara</button></noscript>
+  </form>
+  {% set window = 24 - nightStart + departure %}
+  <div class="muted">Laddar mellan {{ nightStart }}:00 och {{ '%02d' % departure }}:00{% if numHours > window %}, bara {{ window }} timmar ryms{% endif %}.</div>
+  <b>Laddtider</b>
   {% if periods %}
   <ul>{% for day, s, e in periods %}<li>{{ day }} {{ s.strftime('%H:%M') }}–{{ e.strftime('%H:%M') }}</li>{% endfor %}</ul>
   {% else %}

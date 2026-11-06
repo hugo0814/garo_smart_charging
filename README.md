@@ -3,7 +3,8 @@
 Styr en Garo GLB-laddbox så att elbilen laddar under nattens billigaste timmar.
 Priserna hämtas från [elprisetjustnu.se](https://www.elprisetjustnu.se/).
 
-- Väljer de N billigaste timmarna mellan 20:00 och 07:00 varje natt och skriver dem till laddboxens schema.
+- Väljer de N billigaste timmarna mellan 20:00 och avresetiden varje natt och skriver dem till laddboxens schema.
+- Antal laddtimmar och avresetid ändras direkt på webbsidan.
 - Morgondagens priser hämtas när de publiceras (efter kl 13) och schemat uppdateras då.
 - "Ladda nu" sätter laddboxen på ALWAYS_ON i 16 timmar. Pågår laddning när tiden gått ut väntar den en timme till.
 - Webbsidan är ren HTML utan JavaScript-bibliotek och laddas om varje minut, så den fungerar på enkla skärmar och gamla enheter.
@@ -17,6 +18,7 @@ Miljövariabler (se `.env.example`):
 | `GARO_URL` | Laddboxens adress, t.ex. `http://<ip>:8080` | – |
 | `PRICE_AREA` | Elområde `SE1`–`SE4` | `SE3` |
 | `CHARGING_HOURS` | Laddtimmar per natt vid start | `7` |
+| `DEPARTURE_HOUR` | Avresetid (hel timme) vid start, laddningen är klar då | `7` |
 | `SECRET_KEY` | Nyckel för sessionsmeddelanden | slumpas vid start |
 
 ## Köra

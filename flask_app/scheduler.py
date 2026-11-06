@@ -6,7 +6,7 @@ import time
 from datetime import datetime, timedelta
 
 from . import garo
-from .prices import NIGHT_END, chargingHours, getElPrices, toPeriods
+from .prices import chargingHours, getElPrices, toPeriods
 
 MANUAL_HOURS = 16       # "Ladda nu" gäller så här länge innan schemat tar över igen
 PRICES_PUBLISHED = 13   # Morgondagens priser publiceras runt kl 13
@@ -16,6 +16,7 @@ class ChargeScheduler:
     def __init__(self):
         self.prices = {}  # datum -> timpriser
         self.numHours = int(os.environ.get('CHARGING_HOURS', 7))
+        self.departure = int(os.environ.get('DEPARTURE_HOUR', 7))  # avresetid, hel timme
         self.periods = []
         self.manualUntil = None
         self.lock = threading.RLock()
@@ -40,7 +41,7 @@ class ChargeScheduler:
         """Hämtar de dagar som saknas. Gårdagen behövs för natten som pågår efter midnatt."""
         today = now.date()
         wanted = [today]
-        if now.hour < NIGHT_END:
+        if now.hour < self.departure:
             wanted.append(today - timedelta(days=1))
         if now.hour >= PRICES_PUBLISHED:
             wanted.append(today + timedelta(days=1))
@@ -63,13 +64,15 @@ class ChargeScheduler:
     def pricesFor(self, *days):
         return [p for day in days for p in self.prices.get(day, [])]
 
-    def updateSchedule(self, numHours=None):
+    def updateSchedule(self, numHours=None, departure=None):
         with self.lock:
             if numHours:
                 self.numHours = numHours
+            if departure is not None:
+                self.departure = departure
             now = datetime.now().astimezone()
             allPrices = self.pricesFor(*sorted(self.prices))
-            hours = chargingHours(allPrices, self.numHours, now)
+            hours = chargingHours(allPrices, self.numHours, self.departure, now)
             self.periods = [p for p in toPeriods(hours) if p[1] > now]
             # Under "Ladda nu" skrivs schemat, men läget lämnas på ALWAYS_ON.
             return garo.applySchedule(self.periods, activate=self.manualUntil is None)

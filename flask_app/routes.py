@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from . import garo
-from .prices import PRICE_AREA, stats
+from .prices import NIGHT_START, PRICE_AREA, stats
 from .scheduler import scheduler
 
 bp = Blueprint('main', __name__)
@@ -11,6 +11,7 @@ bp = Blueprint('main', __name__)
 WEEKDAYS = ['mån', 'tis', 'ons', 'tor', 'fre', 'lör', 'sön']
 MODE_NAMES = {'ALWAYS_ON': 'Ladda nu', 'ALWAYS_OFF': 'Av', 'SCHEMA': 'Schema'}
 MAX_HOURS = 11
+DEPARTURE_HOURS = range(3, 13)
 
 
 @bp.get('/')
@@ -53,6 +54,9 @@ def index():
         periods=[(WEEKDAYS[s.weekday()], s, e) for s, e in periods],
         numHours=scheduler.numHours,
         maxHours=MAX_HOURS,
+        departure=scheduler.departure,
+        departureHours=DEPARTURE_HOURS,
+        nightStart=NIGHT_START,
     )
 
 
@@ -74,12 +78,13 @@ def resume():
     return redirect(url_for('main.index'))
 
 
-@bp.post('/hours')
-def setHours():
+@bp.post('/settings')
+def settings():
     numHours = request.form.get('hours', type=int)
-    if numHours and 1 <= numHours <= MAX_HOURS:
-        scheduler.updateSchedule(numHours)
-        flash(f'Laddar {numHours} timmar per natt.')
+    departure = request.form.get('departure', type=int)
+    if numHours in range(1, MAX_HOURS + 1) and departure in DEPARTURE_HOURS:
+        scheduler.updateSchedule(numHours, departure)
+        flash(f'Laddar {numHours} timmar per natt, klart till {departure:02d}:00.')
     return redirect(url_for('main.index'))
 
 

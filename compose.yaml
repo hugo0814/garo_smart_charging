@@ -8,6 +8,7 @@ services:
       - GARO_URL=${GARO_URL}
       - PRICE_AREA=${PRICE_AREA:-SE3}
       - CHARGING_HOURS=${CHARGING_HOURS:-7}
+      - DEPARTURE_HOUR=${DEPARTURE_HOUR:-7}
       - TZ=Europe/Stockholm
     volumes:
       - /etc/localtime:/etc/localtime:ro
