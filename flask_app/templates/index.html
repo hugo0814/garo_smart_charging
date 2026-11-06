@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="60">
+<title>Laddning</title>
+<style>
+:root { --bg: #fff; --fg: #222; --muted: #777; --line: #ddd; --bar: #bbb; --on: #2a8a3e; --now: #d33; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #111; --fg: #eee; --muted: #999; --line: #333; --bar: #555; --on: #4caf50; --now: #f55; }
+}
+* { box-sizing: border-box; }
+body { margin: 0 auto; max-width: 640px; padding: 12px; font: 16px/1.4 system-ui, sans-serif; background: var(--bg); color: var(--fg); }
+h1 { font-size: 1.2em; margin: 0 0 12px; }
+section { border-top: 1px solid var(--line); padding: 12px 0; }
+.row { display: flex; justify-content: space-between; gap: 8px; }
+.muted { color: var(--muted); font-size: .9em; }
+.big { font-size: 1.6em; font-weight: bold; }
+.on { color: var(--on); font-weight: bold; }
+.msg { padding: 8px; border: 1px solid var(--line); margin-bottom: 12px; }
+form { display: inline; }
+button, select { font: inherit; padding: 10px 14px; border: 1px solid var(--muted); border-radius: 4px; background: var(--bg); color: var(--fg); }
+.buttons { display: flex; gap: 8px; }
+.buttons form, .buttons button { flex: 1; width: 100%; }
+.chart { display: flex; align-items: flex-end; height: 120px; gap: 1px; }
+.chart div { flex: 1; background: var(--bar); min-height: 1px; }
+.chart .c { background: var(--on); }
+.chart .n { outline: 2px solid var(--now); }
+.labels { display: flex; gap: 1px; font-size: .75em; color: var(--muted); }
+.labels span { flex: 1; overflow: visible; white-space: nowrap; }
+ul { margin: 0; padding-left: 20px; }
+</style>
+</head>
+<body>
+<h1>Laddning · {{ area }}</h1>
+
+{% for m in get_flashed_messages() %}<div class="msg">{{ m }}</div>{% endfor %}
+
+<section>
+  {% if status %}
+  <div class="row"><span>Läge</span><b>{{ mode }}</b></div>
+  {% if manualUntil %}<div class="muted">Återgår till schema {{ manualUntil.strftime('%d/%m %H:%M') }}</div>{% endif %}
+  <div class="row"><span>Status</span>
+    {% if charging %}<span class="on">Laddar {{ '%.1f' % powerKw }} kW</span>{% else %}<span>Laddar inte</span>{% endif %}
+  </div>
+  {% else %}
+  <div>Laddboxen svarar inte.</div>
+  {% endif %}
+</section>
+
+<section class="buttons">
+  <form method="post" action="/charge-now"><button>Ladda nu</button></form>
+  <form method="post" action="/resume"><button>Följ schema</button></form>
+</section>
+
+<section>
+  <div class="row">
+    <div><div class="muted">Pris nu</div><div class="big">{{ '%.2f' % currentPrice if currentPrice is not none else '–' }}</div><div class="muted">kr/kWh</div></div>
+    <div>
+      {% if today %}<div class="muted">Idag {{ '%.2f' % today.min }}–{{ '%.2f' % today.max }}, snitt {{ '%.2f' % today.avg }}</div>{% endif %}
+      {% if tomorrow %}<div class="muted">Imorgon {{ '%.2f' % tomorrow.min }}–{{ '%.2f' % tomorrow.max }}, snitt {{ '%.2f' % tomorrow.avg }}</div>
+      {% else %}<div class="muted">Morgondagens priser kommer ca kl 13</div>{% endif %}
+    </div>
+  </div>
+</section>
+
+{% if bars %}
+<section>
+  <div class="chart">{% for b in bars %}<div class="{{ 'c' if b.charging }} {{ 'n' if b.now }}" style="height:{{ '%.0f' % b.pct }}%" title="{{ b.title }}"></div>{% endfor %}</div>
+  <div class="labels">{% for b in bars %}<span>{{ b.label }}</span>{% endfor %}</div>
+  <div class="muted">Grönt = laddning, rött = nu</div>
+</section>
+{% endif %}
+
+<section>
+  <div class="row">
+    <b>Laddtider</b>
+    <form method="post" action="/hours">
+      <select name="hours" onchange="this.form.submit()">
+        {% for h in range(1, maxHours + 1) %}<option value="{{ h }}" {{ 'selected' if h == numHours }}>{{ h }} h/natt</option>{% endfor %}
+      </select>
+      <noscript><button>Spara</button></noscript>
+    </form>
+  </div>
+  {% if periods %}
+  <ul>{% for day, s, e in periods %}<li>{{ day }} {{ s.strftime('%H:%M') }}–{{ e.strftime('%H:%M') }}</li>{% endfor %}</ul>
+  {% else %}
+  <div class="muted">Inga laddtider planerade.</div>
+  {% endif %}
+</section>
+</body>
+</html>
